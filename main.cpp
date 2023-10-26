@@ -6,11 +6,12 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-vector <array<float, 3>> get_data(string path){
+int groups = 0, iterations = 0;
+
+vector <array<double, 4>> get_data(string path){
     ifstream MyReadFile("E:\\pliki\\projekty\\programowanie-lab\\algorytm-centroidow\\data.txt");
     int i = 0;
-    vector <array<float, 3>> position;
-    float groups, iterations;
+    vector <array<double, 4>> position;
     string  myText;
     while (getline (MyReadFile, myText)) {
         if(i ==0){
@@ -19,12 +20,11 @@ vector <array<float, 3>> get_data(string path){
 
         }else if(i == 1){
             iterations = stoi(myText);
-            position.push_back({groups, iterations});
             i++;
         }else{
             stringstream linestream(myText);
             string tmpposition;
-            array <float, 3> pos = {};
+            array <double, 4> pos = {};
             int j = 0;
             while(getline(linestream,tmpposition,','))
             {
@@ -32,6 +32,7 @@ vector <array<float, 3>> get_data(string path){
                 j++;
             }
             pos[2] = -1;
+            pos[3] = -1;
             position.push_back(pos);
         }
 
@@ -43,35 +44,48 @@ vector <array<float, 3>> get_data(string path){
     return position;
 }
 
-vector <array<float, 2>> get_group_possition(int groups, int max){
-    vector <array<float,2>> position;
+void calculate_error(vector <array<double, 4>> data){
+//    cout<<data.size();
+    double sum_distance = 0;
+    for (int i = 0; i < data.size(); ++i) {
+        sum_distance += data[i][3];
+    }
+
+    cout<<"error for this iteration: "<<sum_distance/data.size()<<endl;
+
+
+}
+
+vector <array<double, 2>> get_group_possition(int groups, int max){
+    vector <array<double,2>> position;
     srand(time(0));
     for (int i = 0; i < groups; ++i) {
-        array<float, 2> pos = {};
+        array<double, 2> pos = {};
         for (int j = 0; j < 2; ++j) {
-            pos[j] = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/max));;
+            pos[j] = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max));;
         }
         position.push_back(pos);
     }
     return position;
 }
 
-vector <array<float, 3>> find_closer(vector<array<float,3>> data, vector<array<float,2>> groups){
-    for (int i = 1; i < data.size(); ++i) {
+vector <array<double, 4>> find_closer(vector<array<double,4>> data, vector<array<double,2>> groups){
+    for (int i = 0; i < data.size(); ++i) {
         vector<double> distance;
         for (int j = 0; j < groups.size(); ++j) {
             distance.push_back(sqrt(pow(data[i][0] -groups[j][0], 2) + pow(data[i][1] - groups[j][1], 2) * 1.0) );
         }
         auto result = std::min_element(distance.begin(), distance.end());
         data[i][2] = std::distance(distance.begin(), result);
+        data[i][3] = *result;
 
     }
     return data;
 }
 
-vector <array<float, 2>> find_new_possition(vector <array<float, 2>> groups, vector <array<float, 3>> data){
+vector <array<double, 2>> find_new_possition(vector <array<double, 2>> groups, vector <array<double, 4>> data){
     for (int i = 0; i < groups.size(); ++i) {
-        float localX = 0, localY = 0;
+        double localX = 0, localY = 0;
         int count = 0;
         for (int j = 0; j < data.size(); ++j) {
             if(data[j][2] == i){
@@ -80,8 +94,8 @@ vector <array<float, 2>> find_new_possition(vector <array<float, 2>> groups, vec
                 count ++;
             }
         }
-        float avgX = localX/count;
-        float avgY = localY/count;
+        double avgX = localX/count;
+        double avgY = localY/count;
         if(avgX != groups[i][0] || avgY != groups[i][1]){
             groups[i][0] = avgX;
             groups[i][1] = avgY;
@@ -90,7 +104,7 @@ vector <array<float, 2>> find_new_possition(vector <array<float, 2>> groups, vec
     return groups;
 }
 
-void show_groups_possition(vector <array<float, 2>> groups){
+void show_groups_possition(vector <array<double, 2>> groups){
     for (int i = 0; i < groups.size(); ++i) {
         cout<<"cluster "<<i+1<<" position: X:"<<groups[i][0]<<", Y:"<<groups[i][1]<<endl;
     }
@@ -103,10 +117,8 @@ int main() {
     string path;
     cout << "podaj ścieżke do pliku"<<endl;
     cin >> path;
-    vector <array<float, 3>> data = get_data(path);
-    int groups = data[0][0];
-    int iterations = data[0][1];
-    vector <array<float, 2>> groups_position = get_group_possition(groups, maxX);
+    vector <array<double, 4>> data = get_data(path);
+    vector <array<double, 2>> groups_position = get_group_possition(groups, maxX);
 //    for (int j = 0; j < data.size(); ++j) {
 //        cout << data[j][0] << " : "<<data[j][1] << endl;
 //    }
@@ -117,16 +129,16 @@ int main() {
     cout<<"Total clusters: "<<groups<<endl;
     cout<<"Total iterations: "<<iterations<<endl;
 
-    data = find_closer(data, groups_position);
-    vector <array<float, 2>> tmpGroups = find_new_possition(groups_position, data);
 
     for (int i = 0; i < iterations; ++i) {
+        cout<<"--------------------------"<<endl;
         cout<<"iteration -> "<<i+1<<"/"<<iterations<<endl;
         data = find_closer(data, groups_position);
-        vector <array<float, 2>> tmpGroups = find_new_possition(groups_position, data);
+        vector <array<double, 2>> tmpGroups = find_new_possition(groups_position, data);
         if(tmpGroups!= groups_position){
             groups_position = tmpGroups;
         }
+        calculate_error(data);
         show_groups_possition(groups_position);
     }
 
