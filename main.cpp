@@ -10,8 +10,10 @@ int groups = 0, iterations = 0;
 double destination_err = 0, err = 0;
 
 
-void save_to_file(vector <array<double, 4>> data){
-    string output_path = "E:\\pliki\\projekty\\programowanie-lab\\algorytm-centroidow\\output.txt";
+void file_Pattern();
+
+void save_to_file(vector <array<double, 4>> data, filesystem::path path){
+    string output_path = path.u8string() + "\\output.txt";
     ofstream output(output_path);
 
     output<<"błąd kwantyzacji: "<<err<<"\nzdefiniowany błąd: "<<destination_err<<"\nilość iteracji: "<<iterations<<"\nilość clusterów: "<<groups<<"\nX, Y, Cluster, Distance\n";
@@ -24,22 +26,22 @@ void save_to_file(vector <array<double, 4>> data){
 }
 
 vector <array<double, 4>> get_data(string path){
-    ifstream MyReadFile("E:\\pliki\\projekty\\programowanie-lab\\algorytm-centroidow\\data.txt");
-    int i = 0;
+    ifstream MyReadFile(path);
     vector <array<double, 4>> position;
     string  myText;
+    int i =0;
     while (getline (MyReadFile, myText)) {
-        if(i == 0){
-            destination_err = stod(myText);
-            i++;
-        }else if(i ==1){
-            groups = stoi(myText);
-            i++;
+        if(myText.find("err") != string::npos){
 
-        }else if(i == 2){
-            iterations = stoi(myText);
-            i++;
-        }else{
+            destination_err = stod(myText.substr(myText.find(" ") + 1));
+        }else if(myText.find("cluster") != string::npos){
+            groups = stoi(myText.substr(myText.find(" ") + 1));
+        }else if(myText.find("iteration") != string::npos){
+            iterations = stoi(myText.substr(myText.find(" ") + 1));
+        }else if(i>2){
+            if(myText.length() < 3){
+                break;
+            }
             stringstream linestream(myText);
             string tmpposition;
             array <double, 4> pos = {};
@@ -54,10 +56,15 @@ vector <array<double, 4>> get_data(string path){
             position.push_back(pos);
         }
 
+        i++;
+
 
 
     }
     MyReadFile.close();
+    if(destination_err == 0 || groups == 0 || iterations == 0){
+        throw invalid_argument("something is frong while procesing file.");
+    }
 
     return position;
 }
@@ -168,6 +175,29 @@ void show_groups_possition_data(vector <array<double, 4>> cluster){
     }
     cout<<"cluster pos: "<<pos<<endl;
 }
+
+void file_Pattern(filesystem::path path) {
+    cout<<"---------------------"<<endl;
+    cout<<"err: 23.2342"<<endl;
+    cout<<"clusters: 12423"<<endl;
+    cout<<"iterations: 2342"<<endl;
+    cout<<"2.6, 3"<<endl;
+    cout<<"3, 9"<<endl;
+    cout<<"...."<<endl;
+    cout<<"---------------------"<<endl;
+    string pattern_path = path.u8string()+"\\pattern.txt";
+    ofstream output(pattern_path, ios_base::app);
+    output<<"err: 23.2342"<<endl;
+    output<<"clusters: 12423"<<endl;
+    output<<"iterations: 2342"<<endl;
+    output<<"2.6, 3"<<endl;
+    output<<"3, 9"<<endl;
+    output<<"...."<<endl;
+    output.close();
+    cout<<"saving pattern in the same path.";
+
+}
+
 int main() {
 
     int maxX = 10, maxY = 10;
@@ -175,7 +205,21 @@ int main() {
     string path;
     cout << "podaj ścieżke do pliku"<<endl;
     cin >> path;
-    vector <array<double, 4>> data = get_data(path);
+//    string base_filename = path.substr(path.find_last_of("/\\") + 1);
+//    cout<<base_filename;
+    filesystem::path p(path);
+    filesystem::path dir = p.parent_path();
+//    cout<<dir;
+    vector <array<double, 4>> data = {};
+    try{
+         data = get_data(path);
+    }catch (const invalid_argument e){
+        cout << e.what()<<endl;
+        cout<<"check the file pattern:"<<endl;
+        file_Pattern(dir);
+        return -1;
+    }
+
     vector <array<double, 2>> groups_position = {{2.5, 3}, {8, 4.5}};
 //    vector <array<double, 2>> groups_position = get_group_possition(groups, maxX);
 //    for (int j = 0; j < data.size(); ++j) {
@@ -208,11 +252,11 @@ int main() {
         if(err<destination_err){
             cout<<"osiągnięto wymaganą dokładność. Przerywam program...."<<endl;
             cout<<"wymagana dokładność: "<<destination_err;
-            save_to_file(data);
+            save_to_file(data, dir);
             return 1;
         }
     }
-    save_to_file(data);
+    save_to_file(data, dir);
     cout<<"nie udało się osiągnąc wymaganej dokładności: "<<destination_err;
 
 
@@ -228,4 +272,6 @@ int main() {
 
     return 0;
 }
+
+
 
