@@ -135,11 +135,13 @@ void MainWindow::on_actionclear_triggered()
 
 void MainWindow::on_start_clicked()
 {
-    emit start();
     ui->start->setDisabled(true);
+    emit start();
+
 }
 
 void MainWindow::clearPlot(){
+    ui->start->setDisabled(true);
     ui->customplot->clearGraphs();
     ui->customplot->replot();
 }

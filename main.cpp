@@ -10,12 +10,13 @@
 #include <sstream>
 #include <string>
 #include <array>
+#include <windows.h>
 using namespace std;
 MainWindow *mainWindow;
 vector <double> dataX = {}, dataY = {};
 vector <double> clusterX = {}, clusterY = {};
 vector <double> point_distance = {}, group = {};
-int iterations = 0, groups = 0;
+int iterations = 0, groups = 0, max_dim = 0;
 //double max_error = 0;
 double destination_err = 0, prev_err = 0, err = 0, err_sum_g = 0;
 
@@ -43,6 +44,12 @@ void menage_data(string data_str){
                     int j = 0;
                     while(getline(linestream,tmpposition,','))
                     {
+                        if(stod(tmpposition) > max_dim){
+
+                            max_dim = ceil(stod(tmpposition));
+
+
+                        }
                         switch (j) {
                             case 0:
                                 dataX.push_back(stod(tmpposition));
@@ -79,8 +86,8 @@ void show_groups_possition(vector <double> dataX){
 void get_group_possition(){
     srand(time(0));
     for (int i = 0; i < groups; ++i) {
-        clusterX.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/10)));
-        clusterY.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/10)));
+        clusterX.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
+        clusterY.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
     }
 }
 
@@ -167,6 +174,7 @@ void init(){
                 return;
             }
 //            show_groups_possition(groups_position);
+            Sleep(500);
         }
 
     string output_text = "Nie udało się osiągnąć wymaganej dokładności.\n\nWymagana dokładność: "+to_string(destination_err)+" \n\nOsiągnięta dokładność: "+to_string(err);
@@ -201,11 +209,11 @@ int main(int argc, char *argv[])
 
         const string text = "iteracje: "+to_string(iterations)+"; centroidy: "+to_string(groups);
         mainWindow->setLabelText(QString::fromStdString(text));
-//        get_group_possition();
-        clusterX.push_back(2.5);
-        clusterX.push_back(8);
-        clusterY.push_back(3);
-        clusterY.push_back(4.5);
+        get_group_possition();
+//        clusterX.push_back(2.5);
+//        clusterX.push_back(8);
+//        clusterY.push_back(3);
+//        clusterY.push_back(4.5);
         mainWindow->drawPoints(switch_vectors(dataX), switch_vectors(dataY), switch_vectors(group), groups);
         mainWindow->drawClusters(switch_vectors(clusterX), switch_vectors(clusterY));
 
