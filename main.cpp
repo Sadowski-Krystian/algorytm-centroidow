@@ -5,18 +5,21 @@
 #include <array>
 #include <bits/stdc++.h>
 using namespace std;
-//zrobić zapis do pliku
-int groups = 0, iterations = 0;
+int groups = 0, iterations = 0, max_dim = 0;
 double destination_err = 0, err = 0;
-
-
-void file_Pattern();
-
+/**
+ * Save to file
+ *
+ * Save output to file named output in the data directory
+ *
+ * @param data Contains points position
+ * @param path Contains path to output
+ */
 void save_to_file(vector <array<double, 4>> data, filesystem::path path){
     string output_path = path.u8string() + "\\output.txt";
     ofstream output(output_path);
 
-    output<<"błąd kwantyzacji: "<<err<<"\nzdefiniowany błąd: "<<destination_err<<"\nilość iteracji: "<<iterations<<"\nilość clusterów: "<<groups<<"\nX, Y, Cluster, Distance\n";
+    output<<"Error of Quantization: "<<err<<"\nDefined error: "<<destination_err<<"\nIteration count: "<<iterations<<"\nCluster count: "<<groups<<"\nX, Y, Cluster, Distance\n";
     output.close();
 
     output.open(output_path ,ios_base::app);
@@ -25,7 +28,24 @@ void save_to_file(vector <array<double, 4>> data, filesystem::path path){
     }
 }
 
+/**
+ * Get data from file
+ *
+ * Get data from txt file where path is given
+ *
+ * @param path Contains path to file
+ * @return vector of array with points positions
+ */
 vector <array<double, 4>> get_data(string path){
+    if(path.rfind('"', 0) == 0){
+        path = path.substr(1);
+    }
+    string suffix = "\"";
+
+    string substring = path.substr(path.length() - 1);
+    if(substring == suffix){
+        path = path.substr(0, path.size()-1);
+    }
     ifstream MyReadFile(path);
     vector <array<double, 4>> position;
     string  myText;
@@ -48,6 +68,11 @@ vector <array<double, 4>> get_data(string path){
             int j = 0;
             while(getline(linestream,tmpposition,','))
             {
+                if(stod(tmpposition) > max_dim){
+
+                    max_dim = ceil(stod(tmpposition));
+
+                }
                 pos[j] = stof(tmpposition);
                 j++;
             }
@@ -68,36 +93,54 @@ vector <array<double, 4>> get_data(string path){
 
     return position;
 }
-
+/**
+ * Calculate Quantization error
+ *
+ * Calculate Quantization error for any iteration
+ *
+ * @param data vector of array with points position
+ */
 void calculate_error(vector <array<double, 4>> data){
-//    cout<<data.size()<<endl;
     double sum_distance = 0;
     for (int i = 0; i < data.size(); ++i) {
         sum_distance += data[i][3];
-//        cout<<data[i][3]<<endl;
     }
     err = sum_distance/data.size();
     cout<<"error for this iteration: "<<err<<endl;
 
 
 }
-
-vector <array<double, 2>> get_group_possition(int cluster, int max){
+/**
+ * Generate cluster
+ *
+ * Generate number of cluster
+ *
+ * @param cluster amount cluster to generate
+ * @return vector of array with cluster positions
+ */
+vector <array<double, 2>> get_group_possition(int cluster){
     vector <array<double,2>> position;
     srand(time(0));
     for (int i = 0; i < cluster; ++i) {
         array<double, 2> pos = {};
         for (int j = 0; j < 2; ++j) {
-            pos[j] = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max));;
+            pos[j] = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim));;
         }
         position.push_back(pos);
     }
     return position;
 }
-
+/**
+ * Calculate distance between two points
+ *
+ * Calculate distance bettween two points in same dimention
+ * !!! One array have bigger size becouse of store distance and parent cluster index !!!
+ *
+ * @param point1 point from data
+ * @param point2 cluster
+ * @return distance bettwen points
+ */
 double calculate_distance(array<double, 4> point1, array<double, 2> point2){
-//    cout<<point1.size()<<endl;
-//    cout<<point2.size()<<endl;
 
 
     double distance = 0.0;
@@ -111,7 +154,15 @@ double calculate_distance(array<double, 4> point1, array<double, 2> point2){
     return sqrt(distance);
 }
 
-
+/**
+ * Find closer cluster to point
+ *
+ * Check the distance between all clusters and find the one closer
+ *
+ * @param data vector of array with points position
+ * @param cluster vector of array with cluster position
+ * @return vector of array with data with closer cluster index and distance
+ */
 
 vector <array<double, 4>> find_closer(vector<array<double,4>> data, vector<array<double,2>> cluster){
     for (int i = 0; i < data.size(); ++i) {
@@ -126,10 +177,18 @@ vector <array<double, 4>> find_closer(vector<array<double,4>> data, vector<array
 
 
     }
-//    cout<<data[9][3]<<endl;
     return data;
 }
 
+/**
+ * Find new position for cluster
+ *
+ * Calculate avg distance and find new position for cluster
+ *
+ * @param data vector of array with points position
+ * @param cluster vector of array with cluster position
+ * @return vector of array with cluster position
+ */
 vector <array<double, 2>> find_new_possition(vector <array<double, 2>> cluster, vector <array<double, 4>> data){
     for (int i = 0; i < cluster.size(); ++i) {
         double localX = 0, localY = 0;
@@ -153,6 +212,13 @@ vector <array<double, 2>> find_new_possition(vector <array<double, 2>> cluster, 
     }
     return cluster;
 }
+/**
+ * Show points under cluster in output
+ *
+ *
+ * @param data vector of array with points position
+ * @param cluster id of cluster to show
+ */
 void show_points_to_cluster(int cluster, vector <array<double, 4>> data){
     for (int i = 0; i < data.size(); ++i) {
         if(data[i][2] == cluster){
@@ -160,7 +226,13 @@ void show_points_to_cluster(int cluster, vector <array<double, 4>> data){
         }
     }
 }
-
+/**
+ * Show cluster position in output
+ *
+ *
+ * @param data vector of array with points position
+ * @param cluster vector of array with cluster position
+ */
 void show_groups_possition(vector <array<double, 2>> cluster, vector <array<double, 4>> data){
     for (int i = 0; i < cluster.size(); i++) {
         cout<<"cluster "<<i+1<<" position: X:"<<cluster[i][0]<<", Y:"<<cluster[i][1]<<endl;
@@ -168,13 +240,14 @@ void show_groups_possition(vector <array<double, 2>> cluster, vector <array<doub
         show_points_to_cluster(i, data);
     }
 }
-void show_groups_possition_data(vector <array<double, 4>> cluster){
-    string pos ="";
-    for (int i = 0; i < cluster.size(); ++i) {
-        pos += to_string(cluster[i][3]) + "\nj";
-    }
-    cout<<"cluster pos: "<<pos<<endl;
-}
+/**
+ * Give file pattern
+ *
+ * Generate and give fille pattern when wrong file was provide
+ *
+ *
+ * @param path data path where pattern was saved
+ */
 
 void file_Pattern(filesystem::path path) {
     cout<<"---------------------"<<endl;
@@ -197,38 +270,37 @@ void file_Pattern(filesystem::path path) {
     cout<<"saving pattern in the same path.";
 
 }
-
+/**
+ * Main function
+ *
+ * Main function with iteration loop
+ *
+ *
+ * @return operation code
+ * 0 - operation completed error not achieved
+ * 1 - operation completed error achieved
+ * -1 - operation incompleted: an error has occurred
+ */
 int main() {
 
-    int maxX = 10, maxY = 10;
 
     string path;
-    cout << "podaj ścieżke do pliku"<<endl;
+    cout << "Give path to file"<<endl;
     cin >> path;
-//    string base_filename = path.substr(path.find_last_of("/\\") + 1);
-//    cout<<base_filename;
     filesystem::path p(path);
     filesystem::path dir = p.parent_path();
-//    cout<<dir;
     vector <array<double, 4>> data = {};
     try{
          data = get_data(path);
     }catch (const invalid_argument e){
         cout << e.what()<<endl;
-        cout<<"check the file pattern:"<<endl;
+        cout<<"Check the file pattern:"<<endl;
         file_Pattern(dir);
         return -1;
     }
-
+    //test data
     vector <array<double, 2>> groups_position = {{2.5, 3}, {8, 4.5}};
-//    vector <array<double, 2>> groups_position = get_group_possition(groups, maxX);
-//    for (int j = 0; j < data.size(); ++j) {
-//        cout << data[j][0] << " : "<<data[j][1] << endl;
-//    }
-
-//    for (int j = 0; j < groups_position.size(); ++j) {
-//        cout << groups_position[j][0] << " : "<<groups_position[j][1] << endl;
-//    }
+//    vector <array<double, 2>> groups_position = get_group_possition(groups);
     cout<<"Total clusters: "<<groups<<endl;
     cout<<"Total iterations: "<<iterations<<endl;
 
@@ -237,9 +309,6 @@ int main() {
         cout<<"--------------------------"<<endl;
         cout<<"iteration -> "<<i+1<<"/"<<iterations<<endl;
         data = find_closer(data, groups_position);
-//        cout<<data[9][3]<<endl;
-
-//        show_groups_possition_data(data);
         vector <array<double, 2>> tmpGroups = find_new_possition(groups_position, data);
         if(tmpGroups!= groups_position){
             groups_position = tmpGroups;
@@ -250,24 +319,19 @@ int main() {
 
         show_groups_possition(groups_position, data);
         if(err<destination_err){
-            cout<<"osiągnięto wymaganą dokładność. Przerywam program...."<<endl;
-            cout<<"wymagana dokładność: "<<destination_err;
+            cout<<"Required accuracy achieved. Program stopped...."<<endl;
+            cout<<"Defined error: "<<destination_err;
             save_to_file(data, dir);
             return 1;
         }
     }
     save_to_file(data, dir);
-    cout<<"nie udało się osiągnąc wymaganej dokładności: "<<destination_err;
+    cout<<"Failed to achieve required accuracy: "<<destination_err;
 
 
 
 
-//    for (int i = 0; i < data.size(); ++i) {
-//        cout << data[i][2]<< endl;
-//    }
-//    for (int i = 0; i < distance.size(); ++i) {
-//        cout << distance[i] << endl;
-//    }
+
 
 
     return 0;
