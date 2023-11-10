@@ -1,5 +1,5 @@
 err: 0.000421
-clusters: 2
+clusters: 3
 iterations: 10
 2.8, 3
 2, 8

@@ -6,6 +6,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 int groups = 0, iterations = 0, max_dim = 0;
+
 double destination_err = 0, err = 0;
 /**
  * Save to file
@@ -37,15 +38,7 @@ void save_to_file(vector <array<double, 4>> data, filesystem::path path){
  * @return vector of array with points positions
  */
 vector <array<double, 4>> get_data(string path){
-    if(path.rfind('"', 0) == 0){
-        path = path.substr(1);
-    }
-    string suffix = "\"";
 
-    string substring = path.substr(path.length() - 1);
-    if(substring == suffix){
-        path = path.substr(0, path.size()-1);
-    }
     ifstream MyReadFile(path);
     vector <array<double, 4>> position;
     string  myText;
@@ -111,7 +104,7 @@ void calculate_error(vector <array<double, 4>> data){
 
 }
 /**
- * Generate cluster
+ * Randomly generate cluster
  *
  * Generate number of cluster
  *
@@ -130,6 +123,7 @@ vector <array<double, 2>> get_group_possition(int cluster){
     }
     return position;
 }
+
 /**
  * Calculate distance between two points
  *
@@ -155,6 +149,48 @@ double calculate_distance(array<double, 4> point1, array<double, 2> point2){
 }
 
 /**
+ * K-means++ algorithm to generate cluster
+ *
+ * Generate number of cluster
+ *
+ * @param cluster amount cluster to generate
+ * @return vector of array with cluster positions
+ */
+
+vector <array<double, 2>> kmeanspp(vector<array<double, 4>> data){
+    srand(time(0));
+    int firstRandom = rand() % data.size();
+    vector<int> used_points = {};
+    used_points.push_back(firstRandom);
+    vector<array<double, 2>> clusters ={};
+
+    clusters.push_back({data[firstRandom][0], data[firstRandom][1]});
+    cout<<data.size()<<endl;
+    for(int k =0; k < groups-1; k++){
+        array<double, 2> farthestPoint = {};
+        double maxDistance = 0.0;
+
+        for (int i=0; i<data.size(); i++) {
+            double minDistance = DBL_MAX;
+            for (int j=0; j<clusters.size(); j++) {
+                double distance = calculate_distance(data[i],clusters[j]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
+            }
+
+            if (minDistance > maxDistance) {
+                maxDistance = minDistance;
+                farthestPoint[0] = data[i][0];
+                farthestPoint[1] = data[i][1];
+            }
+        }
+        clusters.push_back({farthestPoint[0], farthestPoint[1]});
+    }
+    return clusters;
+}
+
+/**
  * Find closer cluster to point
  *
  * Check the distance between all clusters and find the one closer
@@ -166,13 +202,13 @@ double calculate_distance(array<double, 4> point1, array<double, 2> point2){
 
 vector <array<double, 4>> find_closer(vector<array<double,4>> data, vector<array<double,2>> cluster){
     for (int i = 0; i < data.size(); ++i) {
-        vector<double> distance;
+        vector<double> distances;
         for (int j = 0; j < cluster.size(); ++j) {
             double local_distance = calculate_distance(data[i], cluster[j]);
-            distance.push_back(local_distance);
+            distances.push_back(local_distance);
         }
-        auto result = std::min_element(distance.begin(), distance.end());
-        data[i][2] = std::distance(distance.begin(), result);
+        auto result = std::min_element(distances.begin(), distances.end());
+        data[i][2] = std::distance(distances.begin(), result);
         data[i][3] = *result;
 
 
@@ -287,6 +323,15 @@ int main() {
     string path;
     cout << "Give path to file"<<endl;
     cin >> path;
+    if(path.rfind('"', 0) == 0){
+        path = path.substr(1);
+    }
+    string suffix = "\"";
+
+    string substring = path.substr(path.length() - 1);
+    if(substring == suffix){
+        path = path.substr(0, path.size()-1);
+    }
     filesystem::path p(path);
     filesystem::path dir = p.parent_path();
     vector <array<double, 4>> data = {};
@@ -298,8 +343,25 @@ int main() {
         file_Pattern(dir);
         return -1;
     }
+    vector <array<double, 2>> groups_position = {};
     //test data
-    vector <array<double, 2>> groups_position = {{2.5, 3}, {8, 4.5}};
+//    groups_position = {{2.5, 3}, {8, 4.5}};
+    int algorithm = 0;
+
+    while(algorithm < 1 || algorithm > 2){
+        cout<<"Select cluster generation algorithm\n[1] - random generation\n[2] - k-means++"<<endl;
+        cin>>algorithm;
+    }
+
+    switch (algorithm) {
+        case 1:
+            groups_position = get_group_possition(groups);
+            break;
+        case 2:
+            groups_position = kmeanspp(data);
+            break;
+    }
+
 //    vector <array<double, 2>> groups_position = get_group_possition(groups);
     cout<<"Total clusters: "<<groups<<endl;
     cout<<"Total iterations: "<<iterations<<endl;
