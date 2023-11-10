@@ -6,6 +6,7 @@
 #include <cmath>
 #include <algorithm>
 #include <filesystem>
+#include <cfloat>
 
 using namespace std;
 
@@ -48,15 +49,7 @@ void save_to_file(vector <vector<double>> data, filesystem::path dir){
  */
 vector <vector<double>> get_data(string path){
 
-    if(path.rfind('"', 0) == 0){
-        path = path.substr(1);
-    }
-    string suffix = "\"";
 
-    string substring = path.substr(path.length() - 1);
-    if(substring == suffix){
-        path = path.substr(0, path.size()-1);
-    }
     ifstream MyReadFile(path);
     int i = 0;
     vector <vector<double>> position;
@@ -141,6 +134,7 @@ vector <vector<double>> get_group_possition(int centroids){
     }
     return position;
 }
+
 /**
  * Calculate distance between two points
  *
@@ -152,6 +146,11 @@ vector <vector<double>> get_group_possition(int centroids){
  * @return distance bettwen points
  */
 double calculate_distance(vector<double> point1, vector<double> point2){
+//    cout<<point1.size()<<endl;
+//    cout<<point2.size()<<endl;
+//    for (int i = 0; i < point1.size(); ++i) {
+//        cout<<point1[i]<<endl;
+//    }
     if(point1.size() != point2.size()-2){
         throw  invalid_argument("One of the points is in another dimension, cannot calculate distance");
     }
@@ -165,6 +164,54 @@ double calculate_distance(vector<double> point1, vector<double> point2){
 
 
     return sqrt(distance);
+}
+
+/**
+ * K-means++ algorithm to generate cluster
+ *
+ * Generate number of cluster
+ *
+ * @param cluster amount cluster to generate
+ * @return vector of array with cluster positions
+ */
+vector <vector<double>> kmeanspp(vector<vector<double>> data){
+    srand(time(0));
+    int firstRandom = rand() % data.size();
+    vector<int> used_points = {};
+    used_points.push_back(firstRandom);
+    vector<vector<double>> clusters ={};
+    vector<double> pointsDim = {};
+    for (int i = 0; i < dimensions; ++i) {
+        pointsDim.push_back(data[firstRandom][i]);
+
+    }
+    clusters.push_back(pointsDim);
+    cout<<data.size()<<endl;
+    for(int k =0; k < groups-1; k++){
+        vector<double> farthestPoint = {};
+        double maxDistance = 0.0;
+
+        for (int i=0; i<data.size(); i++) {
+            double minDistance = DBL_MAX;
+            for (int j=0; j<clusters.size(); j++) {
+                cout<<"i: "<<i<<"\nj: "<<j<<endl;
+                double distance = calculate_distance(clusters[j], data[i]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
+            }
+
+            if (minDistance > maxDistance) {
+                maxDistance = minDistance;
+                farthestPoint = {};
+                for (int j = 0; j < dimensions; ++j) {
+                    farthestPoint.push_back(data[i][j]);
+                }
+            }
+        }
+        clusters.push_back(farthestPoint);
+    }
+    return clusters;
 }
 /**
  * Find closer cluster to point
@@ -334,6 +381,15 @@ int main() {
     string path;
     cout << "Give path to file"<<endl;
     cin >> path;
+    if(path.rfind('"', 0) == 0){
+        path = path.substr(1);
+    }
+    string suffix = "\"";
+
+    string substring = path.substr(path.length() - 1);
+    if(substring == suffix){
+        path = path.substr(0, path.size()-1);
+    }
     filesystem::path p(path);
     filesystem::path dir = p.parent_path();
     vector <vector<double>> data = {};
@@ -346,7 +402,22 @@ int main() {
         return -1;
     }
 
-    vector <vector<double>> groups_position = get_group_possition(groups);
+    vector <vector<double>> groups_position ={};
+    int algorithm = 0;
+
+    while(algorithm < 1 || algorithm > 2){
+        cout<<"Select cluster generation algorithm\n[1] - random generation\n[2] - k-means++"<<endl;
+        cin>>algorithm;
+    }
+
+    switch (algorithm) {
+        case 1:
+            groups_position = get_group_possition(groups);
+            break;
+        case 2:
+            groups_position = kmeanspp(data);
+            break;
+    }
 //test data
 //    vector <vector<double>> groups_position = {{2.5, 3}, {8, 4.5}};
 
