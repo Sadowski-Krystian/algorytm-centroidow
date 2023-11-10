@@ -11,11 +11,12 @@
 #include <string>
 #include <array>
 #include <windows.h>
+#include <float.h>
 using namespace std;
 MainWindow *mainWindow;
 vector <double> dataX = {}, dataY = {};
 vector <double> clusterX = {}, clusterY = {};
-vector <double> point_distance = {}, group = {};
+vector <double> point_distance = {}, group = {}, used_points = {};
 int iterations = 0, groups = 0, max_dim = 0;
 //double max_error = 0;
 double destination_err = 0, prev_err = 0, err = 0, err_sum_g = 0;
@@ -82,6 +83,65 @@ void show_groups_possition(vector <double> dataX){
     }
 }
 
+double calculate_distance(double dx, double dy, double cx, double cy){
+
+
+    double distance = 0.0;
+
+
+    distance += pow(dx - cx, 2);
+    distance += pow(dy - cy, 2);
+
+    return sqrt(distance);
+}
+
+array<double, 2>center_of_gravity(vector<double> localDataSetX, vector<double> localDataSetY){
+    double avgX = 0, avgY = 0, sumX = 0, sumY = 0;
+    for(int i=0; i<localDataSetX.size(); i++){
+       sumX += localDataSetX[i];
+       sumY += localDataSetY[i];
+    }
+    avgX = sumX/localDataSetX.size();
+    avgY = sumY/localDataSetY.size();
+    return {avgX, avgY};
+}
+
+
+
+void kmeanspp() {
+    srand(time(0));
+    int firstRandom = rand() % dataX.size();
+    used_points.push_back(firstRandom);
+    clusterX.push_back(dataX[firstRandom]);
+    clusterY.push_back(dataY[firstRandom]);
+
+    for(int i =0; i < groups-1; i++){
+        array<double, 2> farthestPoint = {};
+        double maxDistance = 0.0;
+
+        for (int i=0; i<dataX.size(); i++) {
+            double minDistance = DBL_MAX;
+
+            for (int j=0; j<clusterX.size(); j++) {
+                double distance = calculate_distance(dataX[i], dataY[i], clusterX[j], clusterY[j]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
+            }
+
+            if (minDistance > maxDistance) {
+                maxDistance = minDistance;
+                farthestPoint[0] = dataX[i];
+                farthestPoint[1] = dataY[i];
+            }
+        }
+        clusterX.push_back(farthestPoint[0]);
+        clusterY.push_back(farthestPoint[1]);
+    }
+
+
+
+}
 
 void get_group_possition(){
     srand(time(0));
@@ -98,11 +158,11 @@ void find_closer(){
     for (int i = 0; i < dataX.size(); ++i) {
         vector<double> local_distance;
         for (int j = 0; j < clusterX.size(); ++j) {
-            local_distance.push_back(sqrt(pow(dataX[i] -clusterX[j], 2) + pow(dataY[i] - clusterY[j], 2) * 1.0) );
+            local_distance.push_back(calculate_distance(dataX[i], dataY[i], clusterX[j], clusterY[j]) );
         }
-        auto result = std::min_element(local_distance.begin(), local_distance.end());
+        auto result = min_element(local_distance.begin(), local_distance.end());
 
-        group.push_back(std::distance(local_distance.begin(), result));
+        group.push_back(distance(local_distance.begin(), result));
         point_distance.push_back(*result);
 
     }
@@ -141,7 +201,6 @@ void calculate_error(){
     }
 //    qDebug()<<point_distance.size();
     err = sum_distance/point_distance.size();
-    qDebug()<<err;
 //    if(isnan(err)){
 //        err = 0;
 //    }
@@ -201,6 +260,7 @@ int main(int argc, char *argv[])
         clusterY = {};
         group = {};
         point_distance = {};
+        used_points ={};
         try{
                  menage_data(informacje.toStdString());
             }catch (const invalid_argument e){
@@ -209,7 +269,8 @@ int main(int argc, char *argv[])
 
         const string text = "iteracje: "+to_string(iterations)+"; centroidy: "+to_string(groups);
         mainWindow->setLabelText(QString::fromStdString(text));
-        get_group_possition();
+//        get_group_possition();
+        kmeanspp();
 //        clusterX.push_back(2.5);
 //        clusterX.push_back(8);
 //        clusterY.push_back(3);
