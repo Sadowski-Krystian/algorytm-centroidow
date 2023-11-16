@@ -146,11 +146,7 @@ vector <vector<double>> get_group_possition(int centroids){
  * @return distance bettwen points
  */
 double calculate_distance(vector<double> point1, vector<double> point2){
-//    cout<<point1.size()<<endl;
-//    cout<<point2.size()<<endl;
-//    for (int i = 0; i < point1.size(); ++i) {
-//        cout<<point1[i]<<endl;
-//    }
+
     if(point1.size() != point2.size()-2){
         throw  invalid_argument("One of the points is in another dimension, cannot calculate distance");
     }
@@ -194,7 +190,6 @@ vector <vector<double>> kmeanspp(vector<vector<double>> data){
         for (int i=0; i<data.size(); i++) {
             double minDistance = DBL_MAX;
             for (int j=0; j<clusters.size(); j++) {
-                cout<<"i: "<<i<<"\nj: "<<j<<endl;
                 double distance = calculate_distance(clusters[j], data[i]);
                 if (distance < minDistance) {
                     minDistance = distance;
