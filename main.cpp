@@ -20,17 +20,29 @@ vector <double> point_distance = {}, group = {}, used_points = {};
 int iterations = 0, groups = 0, max_dim = 0;
 //double max_error = 0;
 double destination_err = 0, prev_err = 0, err = 0, err_sum_g = 0;
-
+/**
+ * convert vectors
+ *
+ * save file data to local varibles
+ *
+ * @param Vector to convert
+ * @return Qvector with same content
+ */
 QVector<double> switch_vectors(vector<double> toCopy){
     return QVector<double>::fromStdVector(toCopy);
 }
-
+/**
+ * menage file data
+ *
+ * save file data to local varibles
+ *
+ * @param data Contains points position
+ */
 void menage_data(string data_str){
     stringstream ss(data_str);
     string myText = "";
     int i = 0;
     while(getline(ss, myText, '\n')){
-//        qDebug()<<i;
         if(myText.find("err") != string::npos){
 
                     destination_err = stod(myText.substr(myText.find(" ") + 1));
@@ -39,7 +51,6 @@ void menage_data(string data_str){
                 }else if(myText.find("iteration") != string::npos){
                     iterations = stoi(myText.substr(myText.find(" ") + 1));
                 }else if(i>2){
-//qDebug()<<"test";
                     stringstream linestream(myText);
                     string tmpposition;
                     int j = 0;
@@ -76,13 +87,28 @@ void menage_data(string data_str){
         }
 
 }
-
+/**
+ * show cluster position
+ *
+ * debug function - show cluster position in debug console
+ *
+ * @param one of data vectors
+ */
 void show_groups_possition(vector <double> dataX){
     for (int i = 0; i < dataX.size(); ++i) {
         qDebug()<<"cluster "<<i+1<<" position: X:"<<dataX[i]<<", Y:"<<dataY[i]<<endl;
     }
 }
-
+/**
+ * Calculate distance between two points
+ *
+ * Calculate distance bettween two points in same dimention
+ *
+ * @param dx dataX of point
+ * @param dy dataY of point
+ * @param cx dataX of cluster
+ * @param cy dataY of cluster
+ */
 double calculate_distance(double dx, double dy, double cx, double cy){
 
 
@@ -95,16 +121,12 @@ double calculate_distance(double dx, double dy, double cx, double cy){
     return sqrt(distance);
 }
 
-array<double, 2>center_of_gravity(vector<double> localDataSetX, vector<double> localDataSetY){
-    double avgX = 0, avgY = 0, sumX = 0, sumY = 0;
-    for(int i=0; i<localDataSetX.size(); i++){
-       sumX += localDataSetX[i];
-       sumY += localDataSetY[i];
-    }
-    avgX = sumX/localDataSetX.size();
-    avgY = sumY/localDataSetY.size();
-    return {avgX, avgY};
-}
+/**
+ * K-means++ algorithm to generate cluster
+ *
+ * Generate number of cluster with logical way
+ *
+ */
 
 
 
@@ -142,7 +164,11 @@ void kmeanspp() {
 
 
 }
-
+/**
+ * Randomly generate cluster
+ *
+ * Generate number of cluster in random way
+ */
 void get_group_possition(){
     srand(time(0));
     for (int i = 0; i < groups; ++i) {
@@ -151,7 +177,12 @@ void get_group_possition(){
     }
 }
 
-
+/**
+ * Find closer cluster to point
+ *
+ * Check the distance between all clusters and find the one closer
+ *
+ */
 void find_closer(){
     group = {};
     point_distance = {};
@@ -167,7 +198,12 @@ void find_closer(){
 
     }
 }
-
+/**
+ * Find new position for cluster
+ *
+ * Calculate avg distance and find new position for cluster
+ *
+ */
 
 void find_new_possition(){
     for (int i = 0; i < clusterX.size(); ++i) {
@@ -188,31 +224,39 @@ void find_new_possition(){
         }
     }
 }
-
+/**
+ * Calculate distance between two points
+ *
+ * Calculate distance bettween two points in same dimention
+ *
+ */
 void calculate_error(){
-//    qDebug()<<"calculate error";
 
-//    qDebug()<<dataX.size();
-//    cout<<data.size();
     double sum_distance = 0;
     for (int i = 0; i < point_distance.size(); ++i) {
         sum_distance += point_distance[i];
-//        qDebug()<<point_distance[i];
     }
-//    qDebug()<<point_distance.size();
+
     err = sum_distance/point_distance.size();
-//    if(isnan(err)){
-//        err = 0;
-//    }
-//    return "Błąd kwantyzacji: "+to_string(sum_distance/point_distance.size());
 
 
 }
-
+/**
+ * Save to file
+ *
+ * Call methode in ui to save file
+ *
+ *
+ */
 void save(){
     mainWindow->save_to_file(switch_vectors(dataX), switch_vectors(dataY), groups, iterations, err, destination_err, switch_vectors(point_distance), switch_vectors(group));
 }
-
+/**
+ * Main algorithm function
+ *
+ * Main algorithm function with iteration loop
+ *
+ */
 
 void init(){
     for (int i = 0; i < iterations; i++) {
@@ -233,7 +277,7 @@ void init(){
                 return;
             }
 //            show_groups_possition(groups_position);
-            Sleep(500);
+//            Sleep(500); sleep
         }
 
     string output_text = "Nie udało się osiągnąć wymaganej dokładności.\n\nWymagana dokładność: "+to_string(destination_err)+" \n\nOsiągnięta dokładność: "+to_string(err);
@@ -242,7 +286,11 @@ void init(){
 }
 
 
-
+/**
+ * Main program function
+ *
+ *
+ */
 
 int main(int argc, char *argv[])
 {
@@ -271,10 +319,6 @@ int main(int argc, char *argv[])
         mainWindow->setLabelText(QString::fromStdString(text));
 //        get_group_possition();
         kmeanspp();
-//        clusterX.push_back(2.5);
-//        clusterX.push_back(8);
-//        clusterY.push_back(3);
-//        clusterY.push_back(4.5);
         mainWindow->drawPoints(switch_vectors(dataX), switch_vectors(dataY), switch_vectors(group), groups);
         mainWindow->drawClusters(switch_vectors(clusterX), switch_vectors(clusterY));
 

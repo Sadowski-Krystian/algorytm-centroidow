@@ -13,11 +13,12 @@
 #include <QMessageBox>
 QVector<QPen> pens = {QPen(Qt::green, 3), QPen(Qt::red, 3), QPen(Qt::yellow, 3), QPen(Qt::blue, 3)};
 QVector<QPen> pensPoints = {QPen(Qt::green, 10), QPen(Qt::red, 10), QPen(Qt::yellow, 10), QPen(Qt::blue, 10)};
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
-//    ui->start->setDisabled(true);
     ui->setupUi(this);
     ui->customplot->xAxis->setLabel("długość");
     ui->customplot->yAxis->setLabel("szerokość");
@@ -51,17 +52,33 @@ void MainWindow::on_actionopen_triggered()
     setWindowTitle(fileName);
     QTextStream in(&file);
     QString text = in.readAll();
-//    ui->label->setText(fileName);
     ui->start->setDisabled(false);
     emit file_data(text);
     file.close();
 
 }
-
+/**
+ * Set Label Text
+ *
+ * Set any text to labalel
+ *
+ *
+ * @param text to set on label
+ */
 void MainWindow::setLabelText(const QString text){
     ui->dataLoaded->setText(text);
 }
-
+/**
+ * Draw points on plot
+ *
+ * Draw data points on plot
+ *
+ *
+ * @param dataX point X coordinates
+ * @param dataY point Y coordinates
+ * @param gorup vector of cluster indext for points
+ * @param groups a amount of clusters
+ */
 void MainWindow::drawPoints(const QVector<double> dataX, const QVector<double> dataY, const QVector<double> group, const int groups){
     if(group.empty()){
         ui->customplot->addGraph();
@@ -83,9 +100,6 @@ void MainWindow::drawPoints(const QVector<double> dataX, const QVector<double> d
         ui->customplot->graph(g_count)->setPen(pensPoints[i]);
         for (int j=0;j<group.size() ;j++ ) {
             if(group[j] == i){
-//                qDebug()<<j;
-//                qDebug()<<dataX.size();
-//                qDebug()<<group.size();
                 ui->customplot->graph(g_count)->addData(dataX[j],dataY[j]);
             }
         }
@@ -100,13 +114,22 @@ void MainWindow::drawPoints(const QVector<double> dataX, const QVector<double> d
 
 
 }
+/**
+ * Draw closter on plot
+ *
+ *
+ *
+ *
+ * @param dataX cluster X coordinates
+ * @param dataY cluster Y coordinates
+
+ */
+
 void MainWindow::drawClusters(const QVector<double> dataX, const QVector<double> dataY){
 
      if(dataX.size() > pens.size()){
          return;
      }
-//    qDebug()<<dataX;
-//    qDebug()<<dataY;
 
     for (int i =0;i<dataX.size() ;i++ ) {
         int g_count = ui->customplot->graphCount();
@@ -125,28 +148,40 @@ void MainWindow::drawClusters(const QVector<double> dataX, const QVector<double>
 
 
 
-
+/**
+ * Clear Plot
+ *
+ */
 
 void MainWindow::on_actionclear_triggered()
 {
     clearPlot();
 }
 
-
+/**
+ * Start algorithm
+ *
+ */
 void MainWindow::on_start_clicked()
 {
     ui->start->setDisabled(true);
     emit start();
 
 }
-
+/**
+ * Clear Plot
+ *
+ */
 void MainWindow::clearPlot(){
     ui->start->setDisabled(true);
     ui->customplot->clearGraphs();
     ui->customplot->replot();
 }
 
-
+/**
+ * Save to file check
+ *
+ */
 void MainWindow::on_actionsave_triggered()
 {
     if(ui->customplot->graphCount() == 0 || ui->start->isEnabled()){
@@ -155,7 +190,10 @@ void MainWindow::on_actionsave_triggered()
     }
     emit save();
 }
-
+/**
+ * Save to file
+ *
+ */
 void MainWindow::save_to_file(const QVector<double> dataX, const QVector<double> dataY,  const int groups,  const int iterations,  const double error,  const double max_error, const QVector<double> distance, const QVector<double> group){
 
     QString fileName = QFileDialog::getSaveFileName(this,
@@ -182,6 +220,14 @@ void MainWindow::save_to_file(const QVector<double> dataX, const QVector<double>
 
 
 }
+/**
+ * Throw any error
+ *
+ * Open Dialog window with warning/error
+ *
+ *
+ * @param message/error
+ */
 void MainWindow::throwMyErr(const QString err){
      QMessageBox::warning(this, "Warning", err);
      ui->start->setDisabled(true);
