@@ -5,14 +5,12 @@
 #include <vector>
 #include <sstream>
 #include <array>
-#include <bits/stdc++.h>
 
 #include <QFile>
 #include <QFileDialog>
 #include <QTextStream>
 #include <QMessageBox>
-QVector<QPen> pens = {QPen(Qt::green, 3), QPen(Qt::red, 3), QPen(Qt::yellow, 3), QPen(Qt::blue, 3)};
-QVector<QPen> pensPoints = {QPen(Qt::green, 10), QPen(Qt::red, 10), QPen(Qt::yellow, 10), QPen(Qt::blue, 10)};
+
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -38,7 +36,6 @@ MainWindow::~MainWindow()
 void MainWindow::on_actionopen_triggered()
 {
 
-
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open The File"), "", tr("text file (*.txt)"));
     QFile file(fileName);
     if(!file.open(QIODevice::ReadOnly | QFile::Text)){
@@ -54,9 +51,33 @@ void MainWindow::on_actionopen_triggered()
     QString text = in.readAll();
     ui->start->setDisabled(false);
     emit file_data(text);
+
     file.close();
 
 }
+/**
+ * Set data from file
+ * Set Data to Class Varibles
+ *\
+ *
+ * @param iteration set private class field iteration
+ * @param dataX set private class field dataX
+ * @param dataY set private class field dataY
+ * @param clusterX set private class field clusterX
+ * @param clusterY set private class field clusterY
+ */
+void MainWindow::setData(int iterations, QVector<double> dataX, QVector<double> dataY, QVector<double> clusterX, QVector<double> clusterY, int groups, QVector<double> group, double destination_err, double err){
+    this->iterations = iterations;
+    this->dataX = dataX;
+    this->dataY = dataY;
+    this->clusterX = clusterX;
+    this->clusterY = clusterY;
+    this->group = group;
+    this->groups = groups;
+    this->destination_err = destination_err;
+    this->err = err;
+}
+
 /**
  * Set Label Text
  *
@@ -90,7 +111,7 @@ void MainWindow::drawPoints(const QVector<double> dataX, const QVector<double> d
         ui->customplot->update();
         return;
     }
-
+    QVector<QPen> pensPoints = {QPen(Qt::green, 10), QPen(Qt::red, 10), QPen(Qt::yellow, 10), QPen(Qt::blue, 10)};
     for (int i=0; i<groups ;i++ ) {
         int g_count = ui->customplot->graphCount();
 
@@ -126,8 +147,8 @@ void MainWindow::drawPoints(const QVector<double> dataX, const QVector<double> d
  */
 
 void MainWindow::drawClusters(const QVector<double> dataX, const QVector<double> dataY){
-
-     if(dataX.size() > pens.size()){
+    QVector<QPen> pensPoints = {QPen(Qt::green, 10), QPen(Qt::red, 10), QPen(Qt::yellow, 10), QPen(Qt::blue, 10)};
+     if(dataX.size() > pensPoints.size()){
          return;
      }
 
@@ -164,8 +185,9 @@ void MainWindow::on_actionclear_triggered()
  */
 void MainWindow::on_start_clicked()
 {
+
     ui->start->setDisabled(true);
-    emit start();
+    emit start(this->iterations, this->dataX, this->dataY, this->clusterX, this->clusterY, this->groups, this->group, this->destination_err);
 
 }
 /**
@@ -179,7 +201,7 @@ void MainWindow::clearPlot(){
 }
 
 /**
- * Save to file check
+ * Save to file
  *
  */
 void MainWindow::on_actionsave_triggered()
@@ -188,14 +210,6 @@ void MainWindow::on_actionsave_triggered()
         QMessageBox::warning(this, "Warning", "Cannot save before operations");
         return;
     }
-    emit save();
-}
-/**
- * Save to file
- *
- */
-void MainWindow::save_to_file(const QVector<double> dataX, const QVector<double> dataY,  const int groups,  const int iterations,  const double error,  const double max_error, const QVector<double> distance, const QVector<double> group){
-
     QString fileName = QFileDialog::getSaveFileName(this,
            tr("Save Operation results"), "test",
            tr("text file (*.txt);;All Files (*)"));
@@ -212,14 +226,14 @@ void MainWindow::save_to_file(const QVector<double> dataX, const QVector<double>
            }
            QTextStream out(&file);
            out.setCodec("UTF-8");
-           out<<"błąd kwantyzacji: "<<error<<"\nzdefiniowany błąd: "<<max_error<<"\nilość iteracji: "<<iterations<<"\nilość clusterów: "<<groups<<"\nX, Y, Cluster, Distance\n";
-           for (int i = 0; i < dataX.size(); ++i) {
-                   out<<dataX[i]<<", "<<dataY[i]<<", "<<group[i]<<", "<<distance[i]<<endl;
+           out<<"błąd kwantyzacji: "<<this->err<<"\nzdefiniowany błąd: "<<this->destination_err<<"\nilość iteracji: "<<this->iterations<<"\nilość clusterów: "<<this->groups<<"\nX, Y, Cluster\n";
+           for (int i = 0; i < this->dataX.size(); i++) {
+                   out<<this->dataX[i]<<", "<<this->dataY[i]<<", "<<this->group[i]<<", "<<endl;
                }
     }
-
-
 }
+
+
 /**
  * Throw any error
  *

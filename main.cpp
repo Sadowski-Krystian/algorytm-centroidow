@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 
-#include <bits/stdc++.h>
 #include <QApplication>
 #include <QDebug>
 
@@ -11,15 +10,11 @@
 #include <string>
 #include <array>
 #include <windows.h>
-#include <float.h>
+#include <cfloat>
+#include <cmath>
 using namespace std;
 MainWindow *mainWindow;
-vector <double> dataX = {}, dataY = {};
-vector <double> clusterX = {}, clusterY = {};
-vector <double> point_distance = {}, group = {}, used_points = {};
-int iterations = 0, groups = 0, max_dim = 0;
-//double max_error = 0;
-double destination_err = 0, prev_err = 0, err = 0, err_sum_g = 0;
+
 /**
  * convert vectors
  *
@@ -28,9 +23,12 @@ double destination_err = 0, prev_err = 0, err = 0, err_sum_g = 0;
  * @param Vector to convert
  * @return Qvector with same content
  */
-QVector<double> switch_vectors(vector<double> toCopy){
+QVector<double> switch_vectors_to_Qt(vector<double> toCopy){
     return QVector<double>::fromStdVector(toCopy);
 }
+//vector<double> switch_vectors(QVector<double> toCopy){
+//    return vector<double>::(toCopy);
+//}
 /**
  * menage file data
  *
@@ -38,8 +36,14 @@ QVector<double> switch_vectors(vector<double> toCopy){
  *
  * @param data Contains points position
  */
-void menage_data(string data_str){
+array<QVector<double>,3> menage_data(string data_str){
+    double destination_err =0;
+    double groups = 0;
+    double iterations = 0;
+    double max_dim =0;
+    QVector<double> dataX ={}, dataY = {};
     stringstream ss(data_str);
+    QVector<double> output={};
     string myText = "";
     int i = 0;
     while(getline(ss, myText, '\n')){
@@ -85,6 +89,11 @@ void menage_data(string data_str){
            mainWindow->throwMyErr("wrong file pattern was provide");
            throw invalid_argument("something is frong while procesing file.");
         }
+    output.push_back(destination_err);
+    output.push_back(groups);
+    output.push_back(iterations);
+    output.push_back(max_dim);
+    return {dataX, dataY, output};
 
 }
 /**
@@ -94,11 +103,11 @@ void menage_data(string data_str){
  *
  * @param one of data vectors
  */
-void show_groups_possition(vector <double> dataX){
-    for (int i = 0; i < dataX.size(); ++i) {
-        qDebug()<<"cluster "<<i+1<<" position: X:"<<dataX[i]<<", Y:"<<dataY[i]<<endl;
-    }
-}
+//void show_groups_possition(vector <double> dataX){
+//    for (int i = 0; i < dataX.size(); ++i) {
+//        qDebug()<<"cluster "<<i+1<<" position: X:"<<dataX[i]<<", Y:"<<dataY[i]<<endl;
+//    }
+//}
 /**
  * Calculate distance between two points
  *
@@ -130,8 +139,10 @@ double calculate_distance(double dx, double dy, double cx, double cy){
 
 
 
-void kmeanspp() {
+array<QVector<double>,2> kmeanspp(int groups, QVector<double> dataX, QVector<double>dataY) {
     srand(time(0));
+    QVector<double> used_points={};
+    QVector<double> clusterX = {},clusterY = {};
     int firstRandom = rand() % dataX.size();
     used_points.push_back(firstRandom);
     clusterX.push_back(dataX[firstRandom]);
@@ -162,30 +173,30 @@ void kmeanspp() {
     }
 
 
-
+    return {clusterX, clusterY};
 }
-/**
- * Randomly generate cluster
- *
- * Generate number of cluster in random way
- */
-void get_group_possition(){
-    srand(time(0));
-    for (int i = 0; i < groups; ++i) {
-        clusterX.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
-        clusterY.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
-    }
-}
+///**
+// * Randomly generate cluster
+// *
+// * Generate number of cluster in random way
+// */
+//void get_group_possition(){
+//    srand(time(0));
+//    for (int i = 0; i < groups; ++i) {
+//        clusterX.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
+//        clusterY.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
+//    }
+//}
 
-/**
- * Find closer cluster to point
- *
- * Check the distance between all clusters and find the one closer
- *
- */
-void find_closer(){
-    group = {};
-    point_distance = {};
+///**
+// * Find closer cluster to point
+// *
+// * Check the distance between all clusters and find the one closer
+// *
+// */
+array<QVector<double>, 2> find_closer(QVector<double> dataX, QVector<double> dataY, QVector<double> clusterX, QVector<double> clusterY){
+    QVector<double> group = {};
+    QVector<double> point_distance = {};
     for (int i = 0; i < dataX.size(); ++i) {
         vector<double> local_distance;
         for (int j = 0; j < clusterX.size(); ++j) {
@@ -197,6 +208,7 @@ void find_closer(){
         point_distance.push_back(*result);
 
     }
+    return {point_distance, group};
 }
 /**
  * Find new position for cluster
@@ -205,7 +217,7 @@ void find_closer(){
  *
  */
 
-void find_new_possition(){
+array<QVector<double>,2> find_new_possition(QVector<double> dataX, QVector<double> dataY, QVector<double> clusterX, QVector<double> clusterY, QVector<double> group){
     for (int i = 0; i < clusterX.size(); ++i) {
         double localX = 0, localY = 0;
         int count = 0;
@@ -223,6 +235,7 @@ void find_new_possition(){
             clusterY[i] = avgY;
         }
     }
+    return {clusterX, clusterY};
 }
 /**
  * Calculate distance between two points
@@ -230,27 +243,18 @@ void find_new_possition(){
  * Calculate distance bettween two points in same dimention
  *
  */
-void calculate_error(){
-
+double calculate_error(QVector<double> point_distance){
+    double err = 0;
     double sum_distance = 0;
     for (int i = 0; i < point_distance.size(); ++i) {
         sum_distance += point_distance[i];
     }
 
     err = sum_distance/point_distance.size();
-
+    return err;
 
 }
-/**
- * Save to file
- *
- * Call methode in ui to save file
- *
- *
- */
-void save(){
-    mainWindow->save_to_file(switch_vectors(dataX), switch_vectors(dataY), groups, iterations, err, destination_err, switch_vectors(point_distance), switch_vectors(group));
-}
+
 /**
  * Main algorithm function
  *
@@ -258,30 +262,32 @@ void save(){
  *
  */
 
-void init(){
+void init(int iterations, QVector<double> dataX, QVector<double>dataY, QVector<double> clusterX, QVector<double>clusterY, int groups, QVector<double> group, double destination_err){
+    double err = 0;
     for (int i = 0; i < iterations; i++) {
             qDebug()<<"iteration";
             qDebug()<<i;
-            find_closer();
-            find_new_possition();
 
-
-            calculate_error();
-
+            array<QVector<double>, 2> closer = find_closer(dataX, dataY, clusterX, clusterY);
+            array<QVector<double>, 2> new_position = find_new_possition(dataX, dataY, clusterX, clusterY, closer[1]);
+            clusterX = new_position[0];
+            clusterY = new_position[1];
+            err = calculate_error(closer[0]);
+            group = closer[1];
             mainWindow->clearPlot();
-            mainWindow->drawPoints(switch_vectors(dataX), switch_vectors(dataY), switch_vectors(group), groups);
-            mainWindow->drawClusters(switch_vectors(clusterX), switch_vectors(clusterY));
+            mainWindow->drawPoints(dataX, dataY, group, groups);
+            mainWindow->drawClusters(clusterX, clusterY);
             if(err<destination_err){
                 string local_text = "osiągnięto wymaganą dokładność. \n\nWymagana dokładność: "+to_string(destination_err)+" \n\nOsiągnięta dokładność: "+to_string(err);
                 mainWindow->setLabelText(QString::fromStdString(local_text));
                 return;
             }
-//            show_groups_possition(groups_position);
-//            Sleep(500); sleep
+////            show_groups_possition(groups_position);
+////            Sleep(500); sleep
         }
 
     string output_text = "Nie udało się osiągnąć wymaganej dokładności.\n\nWymagana dokładność: "+to_string(destination_err)+" \n\nOsiągnięta dokładność: "+to_string(err);
-
+    mainWindow->setData(iterations, dataX, dataY, clusterX, clusterY, groups, group, destination_err, err);
     mainWindow->setLabelText(QString::fromStdString(output_text));
 }
 
@@ -301,37 +307,43 @@ int main(int argc, char *argv[])
 
 
     mainWindow = &w;
-    QObject::connect(&w, &MainWindow::file_data, [](QString informacje){
-        dataX = {};
-        dataY = {};
-        clusterX = {};
-        clusterY = {};
-        group = {};
-        point_distance = {};
-        used_points ={};
+    QObject::connect(&w, &MainWindow::file_data,[=](QString informacje){
+
+        QVector <double> dataX = {}, dataY = {}, group={};
+                int iterations = 0, groups = 0, max_dim = 0;
+                QVector<double> clusterX = {}, clusterY = {};
+                //double max_error = 0;
+                double destination_err = 0;
+        array<QVector<double>,3> data ={};
+        array<QVector<double>, 2> kmeanspp_data = {};
         try{
-                 menage_data(informacje.toStdString());
+                data = menage_data(informacje.toStdString());
             }catch (const invalid_argument e){
                 return -1;
             }
+        dataX = data[0];
+        dataY = data[1];
+        destination_err = data[2][0];
+        groups = data[2][1];
+        iterations = data[2][2];
+        max_dim = data[2][3];
 
         const string text = "iteracje: "+to_string(iterations)+"; centroidy: "+to_string(groups);
         mainWindow->setLabelText(QString::fromStdString(text));
 //        get_group_possition();
-        kmeanspp();
-        mainWindow->drawPoints(switch_vectors(dataX), switch_vectors(dataY), switch_vectors(group), groups);
-        mainWindow->drawClusters(switch_vectors(clusterX), switch_vectors(clusterY));
-
-
-
-    });
-
-    QObject::connect(&w, &MainWindow::start, [](){
-        init();
+        kmeanspp_data = kmeanspp(groups, dataX, dataY);
+        clusterX = kmeanspp_data[0];
+        clusterY = kmeanspp_data[1];
+        mainWindow->drawPoints(dataX, dataY, group, groups);
+        mainWindow->drawClusters(clusterX, clusterY);
+        mainWindow->setData(iterations, dataX, dataY, clusterX, clusterY, groups, group, destination_err, 0);
 
     });
-    QObject::connect(&w, &MainWindow::save, [](){
-        save();
+
+    QObject::connect(&w, &MainWindow::start, [](int iterations, QVector<double> dataX, QVector<double>dataY, QVector<double> clusterX, QVector<double>clusterY, int groups, QVector<double> group, double destination_err){
+        init(iterations, dataX, dataY, clusterX, clusterY, groups, group, destination_err);
+//        int iterations, QVector<double> dataX, QVector<double>dataY, QVector<double> clusterX, QVector<double>clusterY, int groups, QVector<double> group, double destination_err
+//                iterations, dataX, dataY, clusterX, clusterY, groups, group, destination_err
 
     });
     return a.exec();
