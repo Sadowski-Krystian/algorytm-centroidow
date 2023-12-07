@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <cfloat>
 #include <algorithm>
+#include <cstdlib>
 
 using namespace std;
 
@@ -39,10 +40,8 @@ void save_to_file(vector <array<double, 4>> data, filesystem::path path, double 
  * @param path Contains path to file
  * @return vector of array with points positions
  */
-vector <array<double, 4>> get_data(string path){
-    int groups = 0, iterations = 0, max_dim = 0;
+vector <array<double, 4>> get_data(string path, double& destination_err, int& groups, int& iterations, int& max_dim){
 
-    double destination_err = 0;
     ifstream MyReadFile(path);
     vector <array<double, 4>> position;
     string  myText;
@@ -87,7 +86,7 @@ vector <array<double, 4>> get_data(string path){
     if(destination_err == 0 || groups == 0 || iterations == 0){
         throw invalid_argument("something is frong while procesing file.");
     };
-    position.push_back({destination_err, static_cast<double>(groups), static_cast<double>(iterations), static_cast<double>(max_dim)});
+//    position.push_back({destination_err, static_cast<double>(groups), static_cast<double>(iterations), static_cast<double>(max_dim)});
     return position;
 }
 /**
@@ -343,18 +342,18 @@ int main() {
     filesystem::path dir = p.parent_path();
     vector <array<double, 4>> data = {};
     try{
-         data = get_data(path);
+         data = get_data(path, destination_err, groups, iterations, max_dim);
     }catch (const invalid_argument e){
         cout << e.what()<<endl;
         cout<<"Check the file pattern:"<<endl;
         file_Pattern(dir);
         return -1;
     }
-    destination_err = data[data.size()-1][0];
-    groups = data[data.size()-1][1];
-    iterations = data[data.size()-1][2];
-    max_dim = data[data.size()-1][3];
-    data.pop_back();
+//    destination_err = data[data.size()-1][0];
+//    groups = data[data.size()-1][1];
+//    iterations = data[data.size()-1][2];
+//    max_dim = data[data.size()-1][3];
+//    data.pop_back();
     vector <array<double, 2>> groups_position = {};
     //test data
 //    groups_position = {{2.5, 3}, {8, 4.5}};
