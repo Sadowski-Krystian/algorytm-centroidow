@@ -3,11 +3,13 @@
 #include <vector>
 #include <sstream>
 #include <array>
-#include <bits/stdc++.h>
-using namespace std;
-int groups = 0, iterations = 0, max_dim = 0;
+#include <cmath>
+#include <filesystem>
+#include <cfloat>
+#include <algorithm>
 
-double destination_err = 0, err = 0;
+using namespace std;
+
 /**
  * Save to file
  *
@@ -16,7 +18,7 @@ double destination_err = 0, err = 0;
  * @param data Contains points position
  * @param path Contains path to output
  */
-void save_to_file(vector <array<double, 4>> data, filesystem::path path){
+void save_to_file(vector <array<double, 4>> data, filesystem::path path, double err, double destination_err, int iterations, int groups){
     string output_path = path.u8string() + "\\output.txt";
     ofstream output(output_path);
 
@@ -38,7 +40,9 @@ void save_to_file(vector <array<double, 4>> data, filesystem::path path){
  * @return vector of array with points positions
  */
 vector <array<double, 4>> get_data(string path){
+    int groups = 0, iterations = 0, max_dim = 0;
 
+    double destination_err = 0;
     ifstream MyReadFile(path);
     vector <array<double, 4>> position;
     string  myText;
@@ -82,8 +86,8 @@ vector <array<double, 4>> get_data(string path){
     MyReadFile.close();
     if(destination_err == 0 || groups == 0 || iterations == 0){
         throw invalid_argument("something is frong while procesing file.");
-    }
-
+    };
+    position.push_back({destination_err, static_cast<double>(groups), static_cast<double>(iterations), static_cast<double>(max_dim)});
     return position;
 }
 /**
@@ -93,7 +97,8 @@ vector <array<double, 4>> get_data(string path){
  *
  * @param data vector of array with points position
  */
-void calculate_error(vector <array<double, 4>> data){
+double calculate_error(vector <array<double, 4>> data){
+    double err = 0;
     double sum_distance = 0;
     for (int i = 0; i < data.size(); ++i) {
         sum_distance += data[i][3];
@@ -101,7 +106,7 @@ void calculate_error(vector <array<double, 4>> data){
     err = sum_distance/data.size();
     cout<<"error for this iteration: "<<err<<endl;
 
-
+    return err;
 }
 /**
  * Randomly generate cluster
@@ -111,7 +116,7 @@ void calculate_error(vector <array<double, 4>> data){
  * @param cluster amount cluster to generate
  * @return vector of array with cluster positions
  */
-vector <array<double, 2>> get_group_possition(int cluster){
+vector <array<double, 2>> get_group_possition(int cluster, int max_dim){
     vector <array<double,2>> position;
     srand(time(0));
     for (int i = 0; i < cluster; ++i) {
@@ -157,7 +162,7 @@ double calculate_distance(array<double, 4> point1, array<double, 2> point2){
  * @return vector of array with cluster positions
  */
 
-vector <array<double, 2>> kmeanspp(vector<array<double, 4>> data){
+vector <array<double, 2>> kmeanspp(vector<array<double, 4>> data, int groups){
     srand(time(0));
     int firstRandom = rand() % data.size();
     vector<int> used_points = {};
@@ -249,12 +254,12 @@ vector <array<double, 2>> find_new_possition(vector <array<double, 2>> cluster, 
     return cluster;
 }
 /**
- * Show points under cluster in output
- *
- *
- * @param data vector of array with points position
- * @param cluster id of cluster to show
- */
+// * Show points under cluster in output
+// *
+// *
+// * @param data vector of array with points position
+// * @param cluster id of cluster to show
+// */
 void show_points_to_cluster(int cluster, vector <array<double, 4>> data){
     for (int i = 0; i < data.size(); ++i) {
         if(data[i][2] == cluster){
@@ -319,7 +324,9 @@ void file_Pattern(filesystem::path path) {
  */
 int main() {
 
+    int groups = 0, iterations = 0, max_dim;
 
+    double destination_err = 0, err = 0;
     string path;
     cout << "Give path to file"<<endl;
     cin >> path;
@@ -343,6 +350,11 @@ int main() {
         file_Pattern(dir);
         return -1;
     }
+    destination_err = data[data.size()-1][0];
+    groups = data[data.size()-1][1];
+    iterations = data[data.size()-1][2];
+    max_dim = data[data.size()-1][3];
+    data.pop_back();
     vector <array<double, 2>> groups_position = {};
     //test data
 //    groups_position = {{2.5, 3}, {8, 4.5}};
@@ -355,10 +367,10 @@ int main() {
 
     switch (algorithm) {
         case 1:
-            groups_position = get_group_possition(groups);
+            groups_position = get_group_possition(groups, max_dim);
             break;
         case 2:
-            groups_position = kmeanspp(data);
+            groups_position = kmeanspp(data, groups);
             break;
     }
 
@@ -377,17 +389,17 @@ int main() {
         }
 
 
-        calculate_error(data);
+        err = calculate_error(data);
 
         show_groups_possition(groups_position, data);
         if(err<destination_err){
             cout<<"Required accuracy achieved. Program stopped...."<<endl;
             cout<<"Defined error: "<<destination_err;
-            save_to_file(data, dir);
+            save_to_file(data, dir, err, destination_err, iterations, groups);
             return 1;
         }
     }
-    save_to_file(data, dir);
+    save_to_file(data, dir, err, destination_err, iterations, groups);
     cout<<"Failed to achieve required accuracy: "<<destination_err;
 
 
