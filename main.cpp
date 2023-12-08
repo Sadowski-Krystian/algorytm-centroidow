@@ -7,11 +7,11 @@
 #include <algorithm>
 #include <filesystem>
 #include <cfloat>
+#include <cstdlib>
 
 using namespace std;
 
-int groups = 0, iterations = 0, dimensions = 0, max_dim = 0;
-double destination_err = 0, err = 0;
+
 /**
  * Save to file
  *
@@ -19,8 +19,13 @@ double destination_err = 0, err = 0;
  *
  * @param data Contains points position
  * @param path Contains path to output
+ * @param err Contains end error of operations to output
+ * @param destination_err Contains maximal wanted error to output
+ * @param iterations Contains number of loop iterations to output
+ * @param groups Contains number of clusters to output
+ * @param dimensions Contains number of dimensions to output
  */
-void save_to_file(vector <vector<double>> data, filesystem::path dir){
+void save_to_file(vector <vector<double>> data, filesystem::path dir, double  err, double destination_err, int iterations, int groups, int dimensions){
     string output_path = dir.u8string()+"\\output.txt";
     ofstream output(output_path);
 
@@ -45,10 +50,14 @@ void save_to_file(vector <vector<double>> data, filesystem::path dir){
  * Get data from txt file where path is given
  *
  * @param path Contains path to file
+ * @param destination_err Contains reference to destination_err in main function
+ * @param groups Contains reference to groups in main function
+ * @param iterations Contains reference to iterations in main function
+ * @param dimensions Contains reference to dimenstions in main function
+ * @param max_dim Contains reference to max_dim in main function
  * @return vector of vector with n-dimentions points positions
  */
-vector <vector<double>> get_data(string path){
-
+vector <vector<double>> get_data(string path, double& destination_err, int& groups, int& iterations, int& dimensions, int& max_dim){
 
     ifstream MyReadFile(path);
     int i = 0;
@@ -62,7 +71,7 @@ vector <vector<double>> get_data(string path){
             groups = stoi(myText.substr(myText.find(" ") + 1));
         }else if(myText.find("iteration") != string::npos){
             iterations = stoi(myText.substr(myText.find(" ") + 1));
-        }else if(i>3){
+        }else if(i>2){
             if(myText.length() < 3){
                 break;
             }
@@ -95,6 +104,7 @@ vector <vector<double>> get_data(string path){
     if(destination_err == 0 || groups == 0 || iterations == 0){
         throw invalid_argument("something is frong while procesing file.");
     }
+//    position.push_back({destination_err, static_cast<double>(groups), static_cast<double>(iterations), static_cast<double>(max_dim), static_cast<double>(dimensions)});
     return position;
 }
 
@@ -103,9 +113,11 @@ vector <vector<double>> get_data(string path){
  *
  * Calculate Quantization error for any iteration
  *
- * @param data vector of array with points position
+ * @param data vector of vector with points position
+ * @return current Quantization error
  */
-void calculate_error(vector <vector<double>> data){
+double calculate_error(vector <vector<double>> data){
+    double  err = 0;
     double sum_distance = 0;
     for (int i = 0; i < data.size(); i++) {
         sum_distance += data[i][data[i].size()-1];
@@ -113,6 +125,7 @@ void calculate_error(vector <vector<double>> data){
     err = sum_distance/data.size();
 
     cout<<"error for this iteration: "<<err<<endl;
+    return err;
 }
 /**
  * Generate cluster
@@ -120,9 +133,11 @@ void calculate_error(vector <vector<double>> data){
  * Generate number of cluster
  *
  * @param cluster amount cluster to generate
+ * @param dimensions number of dimentions
+ * @param max_dim maximum size of plot
  * @return vector of array with cluster positions
  */
-vector <vector<double>> get_group_possition(int centroids){
+vector <vector<double>> get_group_possition(int centroids, int dimensions, int max_dim){
     vector <vector<double>> position;
     srand(time(0));
     for (int i = 0; i < centroids; i++) {
@@ -168,9 +183,11 @@ double calculate_distance(vector<double> point1, vector<double> point2){
  * Generate number of cluster
  *
  * @param cluster amount cluster to generate
+ * @param dimensions number of dimension
+ * @param groups number of clusters
  * @return vector of array with cluster positions
  */
-vector <vector<double>> kmeanspp(vector<vector<double>> data){
+vector <vector<double>> kmeanspp(vector<vector<double>> data, int dimensions, int groups){
     srand(time(0));
     int firstRandom = rand() % data.size();
     vector<int> used_points = {};
@@ -245,9 +262,10 @@ vector <vector<double>> find_closer(vector<vector<double>> data, vector<vector<d
  *
  * @param data vector of vector with points position
  * @param cluster vector of vector with cluster position
+ * @param dimensions number of dimensions
  * @return vector of vector with cluster position
  */
-vector <vector<double>> find_new_possition(vector <vector<double>> centroids, vector <vector<double>> data){
+vector <vector<double>> find_new_possition(vector <vector<double>> centroids, vector <vector<double>> data, int dimensions){
 
 
 
@@ -373,6 +391,8 @@ void file_Pattern(filesystem::path path) {
  * -1 - operation incompleted: an error has occurred
  */
 int main() {
+    int groups = 0, iterations = 0, dimensions = 0, max_dim = 0;
+    double destination_err = 0, err = 0;
     string path;
     cout << "Give path to file"<<endl;
     cin >> path;
@@ -389,13 +409,20 @@ int main() {
     filesystem::path dir = p.parent_path();
     vector <vector<double>> data = {};
     try{
-        data = get_data(path);
+        data = get_data(path, destination_err, groups, iterations, dimensions, max_dim);
     }catch (const invalid_argument e){
         cout << e.what()<<endl;
         cout<<"Check the file pattern:"<<endl;
         file_Pattern(dir);
         return -1;
     }
+//    destination_err = data[data.size()-1][0];
+//    groups = data[data.size()-1][1];
+//    iterations = data[data.size()-1][2];
+//    max_dim = data[data.size()-1][3];
+//    dimensions = data[data.size()-1][4];
+////    cout<<data.size();
+//    data.pop_back();
 
     vector <vector<double>> groups_position ={};
     int algorithm = 0;
@@ -407,10 +434,10 @@ int main() {
 
     switch (algorithm) {
         case 1:
-            groups_position = get_group_possition(groups);
+            groups_position = get_group_possition(groups, dimensions, max_dim);
             break;
         case 2:
-            groups_position = kmeanspp(data);
+            groups_position = kmeanspp(data, dimensions, groups);
             break;
     }
 //test data
@@ -431,19 +458,19 @@ int main() {
         }
 
 
-        groups_position = find_new_possition(groups_position, data);
+        groups_position = find_new_possition(groups_position, data, dimensions);
 
 
-        calculate_error(data);
+        err = calculate_error(data);
         show_groups_possition(groups_position, data);
         if(err<destination_err){
             cout<<"Required accuracy achieved. Program stopped...."<<endl;
             cout<<"Defined error: "<<destination_err;
-            save_to_file(data, dir);
+            save_to_file(data, dir, err, destination_err, iterations, groups, dimensions);
             return 1;
         }
     }
-    save_to_file(data, dir);
+    save_to_file(data, dir, err, destination_err, iterations, groups, dimensions);
     cout<<"Failed to achieve required accuracy: "<<destination_err;
     return 0;
 }
