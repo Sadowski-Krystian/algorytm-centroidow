@@ -18,6 +18,10 @@ using namespace std;
  *
  * @param data Contains points position
  * @param path Contains path to output
+ * @param err Contains error of operations
+ * @param destination_err Contains wanted max error for operation
+ * @param iterations Contains iteration of main loop
+ * @param groups Contains number of cluster
  */
 void save_to_file(vector <array<double, 4>> data, filesystem::path path, double err, double destination_err, int iterations, int groups){
     string output_path = path.u8string() + "\\output.txt";
@@ -38,6 +42,10 @@ void save_to_file(vector <array<double, 4>> data, filesystem::path path, double 
  * Get data from txt file where path is given
  *
  * @param path Contains path to file
+ * @param destination_err reference to varible in main fucntion contains wanted operation error
+ * @param groups reference to varible in main function contains number of clusters
+ * @param iterations reference to varible in main function contains number of iterations main loop
+ * @param max_dim reference to varible in main function contains maximum size of plot
  * @return vector of array with points positions
  */
 vector <array<double, 4>> get_data(string path, double& destination_err, int& groups, int& iterations, int& max_dim){
@@ -86,6 +94,7 @@ vector <array<double, 4>> get_data(string path, double& destination_err, int& gr
     if(destination_err == 0 || groups == 0 || iterations == 0){
         throw invalid_argument("something is frong while procesing file.");
     };
+// old method to pass data back from function
 //    position.push_back({destination_err, static_cast<double>(groups), static_cast<double>(iterations), static_cast<double>(max_dim)});
     return position;
 }
@@ -95,6 +104,7 @@ vector <array<double, 4>> get_data(string path, double& destination_err, int& gr
  * Calculate Quantization error for any iteration
  *
  * @param data vector of array with points position
+ * @return error for current loop iteration
  */
 double calculate_error(vector <array<double, 4>> data){
     double err = 0;
@@ -113,6 +123,7 @@ double calculate_error(vector <array<double, 4>> data){
  * Generate number of cluster
  *
  * @param cluster amount cluster to generate
+ * @param max_dim maximum size of plot
  * @return vector of array with cluster positions
  */
 vector <array<double, 2>> get_group_possition(int cluster, int max_dim){
@@ -158,6 +169,7 @@ double calculate_distance(array<double, 4> point1, array<double, 2> point2){
  * Generate number of cluster
  *
  * @param cluster amount cluster to generate
+ * @param groups contains number of cluster
  * @return vector of array with cluster positions
  */
 
@@ -349,6 +361,7 @@ int main() {
         file_Pattern(dir);
         return -1;
     }
+//    old system to get data form file
 //    destination_err = data[data.size()-1][0];
 //    groups = data[data.size()-1][1];
 //    iterations = data[data.size()-1][2];
