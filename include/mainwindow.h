@@ -35,6 +35,7 @@ private slots:
     void on_actionsave_triggered();
 
 private:
+    // private class varible to pass data
     QVector<double> dataX, dataY, clusterX, clusterY, group;
     int groups, iterations;
     double destination_err, err;

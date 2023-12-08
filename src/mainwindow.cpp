@@ -58,7 +58,7 @@ void MainWindow::on_actionopen_triggered()
 /**
  * Set data from file
  * Set Data to Class Varibles
- *\
+ *
  *
  * @param iteration set private class field iteration
  * @param dataX set private class field dataX

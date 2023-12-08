@@ -16,25 +16,12 @@ using namespace std;
 MainWindow *mainWindow;
 
 /**
- * convert vectors
- *
- * save file data to local varibles
- *
- * @param Vector to convert
- * @return Qvector with same content
- */
-QVector<double> switch_vectors_to_Qt(vector<double> toCopy){
-    return QVector<double>::fromStdVector(toCopy);
-}
-//vector<double> switch_vectors(QVector<double> toCopy){
-//    return vector<double>::(toCopy);
-//}
-/**
  * menage file data
  *
  * save file data to local varibles
  *
  * @param data Contains points position
+ * @return data from file
  */
 array<QVector<double>,3> menage_data(string data_str){
     double destination_err =0;
@@ -117,6 +104,8 @@ array<QVector<double>,3> menage_data(string data_str){
  * @param dy dataY of point
  * @param cx dataX of cluster
  * @param cy dataY of cluster
+ *
+ * @return distance between points
  */
 double calculate_distance(double dx, double dy, double cx, double cy){
 
@@ -135,6 +124,11 @@ double calculate_distance(double dx, double dy, double cx, double cy){
  *
  * Generate number of cluster with logical way
  *
+ *@param groups number of colusters
+ *@param dataX point X coordynates data
+ *@param dataY point Y coordynates data
+ *
+ *@return array of clusters
  */
 
 
@@ -175,25 +169,38 @@ array<QVector<double>,2> kmeanspp(int groups, QVector<double> dataX, QVector<dou
 
     return {clusterX, clusterY};
 }
-///**
-// * Randomly generate cluster
-// *
-// * Generate number of cluster in random way
-// */
-//void get_group_possition(){
-//    srand(time(0));
-//    for (int i = 0; i < groups; ++i) {
-//        clusterX.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
-//        clusterY.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
-//    }
-//}
+/**
+ * Randomly generate cluster
+ *
+ * Generate number of cluster in random way
+ * @param groups number of cluster
+ * @param max_dim maximum size of plot
+ * @param clusterX data fo clusters X coordynates
+ * @param clusterY data fo clusters Y coordynates
+ */
+array<QVector<double>,2> get_group_possition(int groups, QVector<double> clusterX, QVector<double> clusterY, int max_dim){
+    srand(time(0));
+    for (int i = 0; i < groups; ++i) {
+        clusterX.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
+        clusterY.push_back(static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/max_dim)));
+    }
 
-///**
-// * Find closer cluster to point
-// *
-// * Check the distance between all clusters and find the one closer
-// *
-// */
+    return {clusterX, clusterY};
+}
+
+/**
+ * Find closer cluster to point
+ *
+ * Check the distance between all clusters and find the one closer
+ *
+ * @param dataX data of point X coordinates
+ * @param dataY data of point Y coordinates
+ * @param clusterX data of cluster X coordinates
+ * @param clusterY data of cluster Y coordinates
+ *
+ * @return array of distance and cluster index for all data sets
+ *
+ */
 array<QVector<double>, 2> find_closer(QVector<double> dataX, QVector<double> dataY, QVector<double> clusterX, QVector<double> clusterY){
     QVector<double> group = {};
     QVector<double> point_distance = {};
@@ -214,6 +221,12 @@ array<QVector<double>, 2> find_closer(QVector<double> dataX, QVector<double> dat
  * Find new position for cluster
  *
  * Calculate avg distance and find new position for cluster
+ *
+ * @param dataX data of point X coordinates
+ * @param dataY data of point Y coordinates
+ * @param clusterX data of cluster X coordinates
+ * @param clusterY data of cluster Y coordinates
+ * @param group data of cluster index for add points
  *
  */
 
@@ -238,9 +251,13 @@ array<QVector<double>,2> find_new_possition(QVector<double> dataX, QVector<doubl
     return {clusterX, clusterY};
 }
 /**
- * Calculate distance between two points
+ * Calculate Quantization error
  *
- * Calculate distance bettween two points in same dimention
+ * Calculate Quantization error for any iteration
+ *
+ * @param vector of all points distance
+ *
+ * @return current Quantization error for current iteration
  *
  */
 double calculate_error(QVector<double> point_distance){
@@ -259,6 +276,14 @@ double calculate_error(QVector<double> point_distance){
  * Main algorithm function
  *
  * Main algorithm function with iteration loop
+ *
+ * @param dataX data of point X coordinates
+ * @param dataY data of point Y coordinates
+ * @param clusterX data of cluster X coordinates
+ * @param clusterY data of cluster Y coordinates
+ * @param groups number of clusters
+ * @param group vector of cluster indexes for all points
+ * @param destination_arr max wanted error for output
  *
  */
 
@@ -330,7 +355,7 @@ int main(int argc, char *argv[])
 
         const string text = "iteracje: "+to_string(iterations)+"; centroidy: "+to_string(groups);
         mainWindow->setLabelText(QString::fromStdString(text));
-//        get_group_possition();
+//        kmeanspp_data = get_group_possition(groups, clusterX, clusterY, max_dim);
         kmeanspp_data = kmeanspp(groups, dataX, dataY);
         clusterX = kmeanspp_data[0];
         clusterY = kmeanspp_data[1];
